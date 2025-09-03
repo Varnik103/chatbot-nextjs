@@ -15,7 +15,7 @@ export default function ChatPage() {
 
   return (
     <main className="min-h-[calc(100dvh)] bg-background text-foreground font-sans">
-      <div className="mx-auto w-full max-w-6xl h-[100dvh] flex">
+      <div className="mx-auto w-full max-w-7xl h-[100dvh] flex">
         {/* pass collapsed for desktop rail, and open for mobile drawer */}
         <ChatSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} collapsed={!sidebarOpen} />
         <div className="flex-1 flex flex-col">

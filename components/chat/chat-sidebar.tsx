@@ -9,7 +9,7 @@ import { Plus, X, MoreVertical, Trash } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
-import { useClerk, useUser } from "@clerk/nextjs"
+import { useClerk, useUser, UserButton } from "@clerk/nextjs"
 
 type Session = {
   id: string
@@ -31,7 +31,7 @@ export function ChatSidebar({
 }) {
   const router = useRouter()
   const { user } = useUser()
-  const { signOut } = useClerk()
+  // const { signOut } = useClerk()
   const { data, mutate } = useSWR<{ chats: Session[] }>("/api/history", fetcher)
   const sessions = data?.chats || []
   const sorted = [...sessions].sort((a, b) => Number(b.updatedAt ?? b.createdAt) - Number(a.updatedAt ?? a.createdAt))
@@ -120,12 +120,15 @@ export function ChatSidebar({
 
         {/* Auth footer with user info and logout-on-avatar-click */}
         <div className="p-4 border-t mt-auto">
-          <button className="w-full flex items-center gap-3 text-left" onClick={() => signOut()} title="Sign out">
-            <Avatar className="size-9">
+          <button className="w-full flex items-center gap-3 text-left" 
+          // onClick={() => signOut()} 
+          title="Sign out">
+            {/* <Avatar className="size-9">
               <AvatarFallback aria-hidden="true">{(user?.firstName?.[0] || "U").toUpperCase()}</AvatarFallback>
-            </Avatar>
+              </Avatar> */}
+              <UserButton />
             <div className="min-w-0">
-              <p className="text-sm font-medium truncate">{user?.fullName || "Signed in"}</p>
+              <p className="text-sm font-medium truncate">{user?.fullName}</p>
               <p className="text-xs text-muted-foreground truncate">{user?.primaryEmailAddress?.emailAddress || ""}</p>
             </div>
           </button>
