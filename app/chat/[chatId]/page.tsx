@@ -12,7 +12,7 @@ export default function ChatByIdPage({ params }: { params: Promise<{ chatId: str
   const [sidebarOpen, setSidebarOpen] = useState(false)
   return (
     <main className="min-h-[calc(100dvh)] bg-background text-foreground font-sans">
-      <div className="mx-auto w-full max-w-7xl h-[100dvh] flex">
+      <div className="mx-auto w-full max-w-6xl h-[100dvh] flex">
         <ChatSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} collapsed={!sidebarOpen} />
         <div className="flex-1 flex flex-col">
           <header className="sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">

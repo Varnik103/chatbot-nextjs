@@ -8,8 +8,8 @@ export async function GET() {
   const chats = await db
     .collection("chats")
     .find({ userId })
+    .project({ _id: 0 })
     .sort({ updatedAt: -1, createdAt: -1 })
     .toArray()
-    console.log("history", chats)
   return Response.json({ chats })
 }

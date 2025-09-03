@@ -2,7 +2,6 @@ import { streamText } from "ai"
 import { xai } from "@ai-sdk/xai"
 import { auth, currentUser } from "@clerk/nextjs/server"
 import { getDb } from "@/lib/mongodb"
-import { ObjectId } from "mongodb"
 
 export const dynamic = "force-dynamic"
 
@@ -21,40 +20,33 @@ export async function POST(req: Request) {
     const { chatId, messages, lastAttachments } = await req.json()
     const db = await getDb()
 
-    // upsert user in DB with Clerk profile
+    // upsert user in DB
     const cu = await currentUser()
-    const email = cu?.emailAddresses?.[0]?.emailAddress || null
-    const name = cu ? `${cu.firstName ?? ""} ${cu.lastName ?? ""}`.trim() : null
-    const imageUrl = cu?.imageUrl || null
-    await db
-      .collection("users")
-      .updateOne({ clerkId: userId }, { $set: { clerkId: userId, email, name, imageUrl } }, { upsert: true })
+    const email = cu?.emailAddresses?.[0]?.emailAddress
+    await db.collection("users").updateOne({ id: userId }, { $set: { id: userId, email } }, { upsert: true })
 
-    let effectiveChatObjectId: ObjectId | null = null
+    let effectiveChatId: string | undefined = chatId
 
-    if (chatId) {
-      // validate existing chat
-      const cid = new ObjectId(chatId)
-      const chat = await db.collection("chats").findOne({ _id: cid, userId })
+    if (effectiveChatId) {
+      const chat = await db.collection("chats").findOne({ id: effectiveChatId, userId })
       if (!chat) return Response.json({ error: "Chat not found" }, { status: 404 })
-      effectiveChatObjectId = cid
     } else {
-      // create chat on first message only
       const firstUser = [...(messages || [])].reverse().find((m: any) => m.role === "user")
       const title = smartTitle(firstUser?.content || "New chat")
+      const id = crypto.randomUUID()
       const now = Date.now()
-      const insert = await db.collection("chats").insertOne({
+      await db.collection("chats").insertOne({
+        id,
         title,
         userId,
         createdAt: now,
         updatedAt: now,
         visibility: "private",
       })
-      effectiveChatObjectId = insert.insertedId
-
       if (firstUser?.content) {
         await db.collection("messages").insertOne({
-          chatId: effectiveChatObjectId,
+          id: crypto.randomUUID(),
+          chatId: id,
           role: "user",
           content: firstUser.content,
           parts: { text: firstUser.content },
@@ -62,6 +54,7 @@ export async function POST(req: Request) {
           createdAt: now,
         })
       }
+      effectiveChatId = id
     }
 
     const result = await streamText({
@@ -74,21 +67,23 @@ export async function POST(req: Request) {
     // persist assistant final text and bump updatedAt
     result.text
       .then(async (text) => {
+        const id = crypto.randomUUID()
         const createdAt = Date.now()
         await db.collection("messages").insertOne({
-          chatId: effectiveChatObjectId!,
+          id,
+          chatId: effectiveChatId,
           role: "assistant",
           content: text,
           parts: { text },
           attachments: [],
           createdAt,
         })
-        await db.collection("chats").updateOne({ _id: effectiveChatObjectId! }, { $set: { updatedAt: createdAt } })
+        await db.collection("chats").updateOne({ id: effectiveChatId }, { $set: { updatedAt: createdAt } })
       })
       .catch(() => {})
 
     const response = result.toTextStreamResponse()
-    response.headers.set("X-Chat-Id", effectiveChatObjectId!.toString())
+    response.headers.set("X-Chat-Id", effectiveChatId!)
     return response
   } catch (err: any) {
     const msg =
