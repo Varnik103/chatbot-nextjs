@@ -6,10 +6,10 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { Plus, X, MoreVertical, Trash } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
-import { useClerk, useUser } from "@clerk/nextjs"
+import { useClerk, useUser, UserButton } from "@clerk/nextjs"
 
 type Session = {
   id: string
@@ -30,13 +30,14 @@ export function ChatSidebar({
   collapsed?: boolean
 }) {
   const router = useRouter()
+  const pathname = usePathname()
   const { user } = useUser()
-  const { signOut } = useClerk()
+  // const { signOut } = useClerk()
   const { data, mutate } = useSWR<{ chats: Session[] }>("/api/history", fetcher)
   const sessions = data?.chats || []
   const sorted = [...sessions].sort((a, b) => Number(b.updatedAt ?? b.createdAt) - Number(a.updatedAt ?? a.createdAt))
-  console.log("sessions", sessions)
-  console.log("data", data);
+
+  const activeChatId = pathname.startsWith("/chat/") ? pathname.split("/")[2] : null
 
   async function newChat() {
     router.push("/chat")
@@ -51,6 +52,9 @@ export function ChatSidebar({
       return
     }
     toast.success("Chat deleted")
+    if (typeof window !== "undefined" && window.location.pathname === `/chat/${id}`) {
+      router.push("/chat")
+    }
     mutate()
   }
 
@@ -67,23 +71,14 @@ export function ChatSidebar({
         className={`hidden ${collapsed ? "md:hidden" : "md:flex md:w-72 md:shrink-0"} md:flex-col border-r bg-sidebar text-sidebar-foreground`}
         aria-label="Chat sidebar"
       >
-        <div className="p-4 flex items-center gap-3">
-          <Avatar className="size-9">
-            <AvatarFallback aria-hidden="true">U</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0">
-            <p className="text-sm font-medium truncate">You</p>
-            <p className="text-xs text-muted-foreground truncate">Signed in</p>
-          </div>
-        </div>
-        <div className="px-4 pb-2">
+        <div className="px-4 py-2">
           <Button onClick={newChat} className="w-full bg-blue-600 hover:bg-blue-600/90">
             <Plus className="size-4 mr-2" />
             New chat
           </Button>
         </div>
         <Separator />
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 min-h-0">
           <nav className="p-2 space-y-1">
             {sorted.length === 0 ? (
               <p className="px-2 py-1.5 text-xs text-muted-foreground">No conversations yet</p>
@@ -92,7 +87,9 @@ export function ChatSidebar({
                 <div key={s.id} className="flex items-center gap-1 px-1">
                   <button
                     onClick={() => goToSession(s.id)}
-                    className="flex-1 text-left px-3 py-2 rounded-md text-sm hover:bg-sidebar-accent"
+                    className={`flex-1 text-left px-3 py-2 rounded-md text-sm hover:bg-sidebar-accent transition-colors ${
+                      activeChatId === s.id ? "bg-sidebar-accent border-l-2 border-blue-600" : ""
+                    }`}
                     title={s.title || "New chat"}
                   >
                     <span className="line-clamp-1">{s.title || "New chat"}</span>
@@ -120,12 +117,10 @@ export function ChatSidebar({
 
         {/* Auth footer with user info and logout-on-avatar-click */}
         <div className="p-4 border-t mt-auto">
-          <button className="w-full flex items-center gap-3 text-left" onClick={() => signOut()} title="Sign out">
-            <Avatar className="size-9">
-              <AvatarFallback aria-hidden="true">{(user?.firstName?.[0] || "U").toUpperCase()}</AvatarFallback>
-            </Avatar>
-            <div className="min-w-0">
-              <p className="text-sm font-medium truncate">{user?.fullName || "Signed in"}</p>
+          <button className="w-full flex items-center gap-3 text-left" title="Sign out">
+              <UserButton />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium truncate">{user?.fullName}</p>
               <p className="text-xs text-muted-foreground truncate">{user?.primaryEmailAddress?.emailAddress || ""}</p>
             </div>
           </button>
@@ -142,20 +137,7 @@ export function ChatSidebar({
             aria-modal="true"
             aria-label="Chat sidebar"
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Avatar className="size-9">
-                  <AvatarFallback aria-hidden="true">U</AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="text-sm font-medium">You</p>
-                  <p className="text-xs text-muted-foreground">Signed in</p>
-                </div>
-              </div>
-              <Button variant="ghost" size="icon" aria-label="Close sidebar" onClick={onClose}>
-                <X className="size-5" />
-              </Button>
-            </div>
+            
             <div className="mt-3">
               <Button onClick={newChat} className="w-full bg-blue-600 hover:bg-blue-600/90">
                 <Plus className="size-4 mr-2" />
@@ -163,7 +145,7 @@ export function ChatSidebar({
               </Button>
             </div>
             <Separator className="my-3" />
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 min-h-0">
               <nav className="p-1 space-y-1">
                 {sorted.length === 0 ? (
                   <p className="px-2 py-1.5 text-xs text-muted-foreground">No conversations yet</p>
@@ -172,7 +154,9 @@ export function ChatSidebar({
                     <div key={s.id} className="flex items-center gap-1 px-1">
                       <button
                         onClick={() => goToSession(s.id)}
-                        className="flex-1 text-left px-3 py-2 rounded-md text-sm hover:bg-sidebar-accent"
+                        className={`flex-1 text-left px-3 py-2 rounded-md text-sm hover:bg-sidebar-accent transition-colors ${
+                          activeChatId === s.id ? "bg-sidebar-accent border-l-2 border-blue-600" : ""
+                        }`}
                       >
                         <span className="line-clamp-1">{s.title || "New chat"}</span>
                         <span className="block text-xs text-muted-foreground">
@@ -196,6 +180,18 @@ export function ChatSidebar({
                 )}
               </nav>
             </ScrollArea>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <UserButton />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate">{user?.fullName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{user?.primaryEmailAddress?.emailAddress || ""}</p>
+                </div>
+              </div>
+              {/* <Button variant="ghost" size="icon" aria-label="Close sidebar" onClick={onClose}>
+                <X className="size-5" />
+              </Button> */}
+            </div>
           </div>
         </div>
       )}
