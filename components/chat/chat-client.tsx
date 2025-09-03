@@ -229,7 +229,7 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
     <section className="flex flex-col flex-1">
       <div className="flex-1">
         <ScrollArea className="h-[calc(100dvh-56px-88px)] md:h-[calc(100dvh-64px-96px)]" ref={scrollRef}>
-          <div className="px-4 py-6 md:px-6 md:py-8 space-y-4">
+          <div className="mx-auto w-full max-w-3xl px-4 py-6 md:px-6 md:py-8 space-y-4">
             {messages.length === 0 && (
               <div className="border rounded-lg p-6 md:p-8 text-center text-sm md:text-base text-muted-foreground">
                 Start a conversation. Try: {"“Explain React Server Components in simple terms.”"}

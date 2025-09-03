@@ -5,19 +5,43 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 import { Menu } from "lucide-react"
 import ChatClient from "@/components/chat/chat-client"
+import { useAuth } from "@clerk/nextjs"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 export default function ChatPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+    const { isSignedIn } = useAuth()
+  const router = useRouter()
 
   useEffect(() => {
-    // Keep this index page as an empty composer; do not auto-create chats.
+    const stored = localStorage.getItem("sidebar-collapsed")
+    if (stored) setSidebarOpen(stored === "false")
+    else setSidebarOpen(true) // default open
   }, [])
+
+  useEffect(() => {
+    if (isSignedIn === false) {
+      toast.error("Please sign in to continue")
+      router.replace("/")
+    }
+  }, [isSignedIn, router])
+
+  const handleSidebarToggle = () => {
+    const newState = !sidebarOpen
+    setSidebarOpen(newState)
+    localStorage.setItem("sidebar-collapsed", String(!newState))
+  }
 
   return (
     <main className="min-h-[calc(100dvh)] bg-background text-foreground font-sans">
-      <div className="mx-auto w-full max-w-7xl h-[100dvh] flex">
+      <div className="mx-auto w-full max-w-[1920px] h-[100dvh] flex">
         {/* pass collapsed for desktop rail, and open for mobile drawer */}
-        <ChatSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} collapsed={!sidebarOpen} />
+         <ChatSidebar
+          open={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          collapsed={!sidebarOpen || window.innerWidth < 1024}
+        />
         <div className="flex-1 flex flex-col">
           <header className="sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
             <div className="px-4 py-3 flex items-center justify-between">
@@ -39,7 +63,7 @@ export default function ChatPage() {
                   className="hidden md:inline-flex"
                   aria-pressed={sidebarOpen}
                   aria-label="Toggle sidebar"
-                  onClick={() => setSidebarOpen((v) => !v)}
+                  onClick={handleSidebarToggle}
                   title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
                 >
                   <Menu className="size-5" />
