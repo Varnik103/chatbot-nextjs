@@ -37,7 +37,7 @@ export type MessageDoc = {
   id: string
   chatId: string
   role: "system" | "user" | "assistant" | "data" | "tool"
-  parts?: any
+  // parts?: any
   attachments?: string[]
   content?: string
   createdAt: number

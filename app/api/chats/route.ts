@@ -17,7 +17,8 @@ export async function GET() {
       .sort({ updatedAt: -1, createdAt: -1 })
       .toArray()
     return Response.json({ chats })
-  } catch (e: any) {
+  } catch (err: unknown) {
+    const e = err as { statusCode?: number; message?: string }
     return Response.json({ error: e?.message || "Failed to load chats" }, { status: 500 })
   }
 }
@@ -36,7 +37,8 @@ export async function POST() {
     const doc = { id, title: "New chat", userId, createdAt: now, updatedAt: now, visibility: "private" }
     await db.collection("chats").insertOne(doc)
     return Response.json({ id })
-  } catch (e: any) {
+  } catch (err: unknown) {
+    const e = err as { statusCode?: number; message?: string }
     return Response.json({ error: e?.message || "Failed to create chat" }, { status: 500 })
   }
 }

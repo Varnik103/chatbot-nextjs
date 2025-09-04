@@ -21,7 +21,8 @@ export async function DELETE(
     await db.collection("chats").deleteOne({ id: chatId, userId })
 
     return new Response(null, { status: 204 })
-  } catch (e: any) {
+  } catch (err: unknown) {
+    const e = err as { statusCode?: number; message?: string }
     return Response.json({ error: e?.message || "Failed to delete chat" }, { status: 500 })
   }
 }

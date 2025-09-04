@@ -5,6 +5,9 @@ import { getDb } from "@/lib/mongodb"
 
 export const dynamic = "force-dynamic"
 
+type Role = "system" | "user" | "assistant" | "data" | "tool"
+type Message = { id?: string; role: Role; content: string; attachments?: string[] }
+
 function smartTitle(text: string) {
   const trimmed = (text || "").trim().replace(/\s+/g, " ")
   const firstSentence = trimmed.split(/[.!?]\s/)[0] || trimmed
@@ -31,10 +34,14 @@ export async function POST(req: Request) {
       const chat = await db.collection("chats").findOne({ id: effectiveChatId, userId })
       if (!chat) return Response.json({ error: "Chat not found" }, { status: 404 })
     } else {
-      const firstUser = [...(messages || [])].reverse().find((m: any) => m.role === "user")
+      const firstUser = [...(messages as Message[] | [])]
+        .reverse()
+        .find((m: Message) => m.role === "user")
+
       const title = smartTitle(firstUser?.content || "New chat")
       const id = crypto.randomUUID()
       const now = Date.now()
+
       await db.collection("chats").insertOne({
         id,
         title,
@@ -43,6 +50,7 @@ export async function POST(req: Request) {
         updatedAt: now,
         visibility: "private",
       })
+
       if (firstUser?.content) {
         await db.collection("messages").insertOne({
           id: crypto.randomUUID(),
@@ -54,6 +62,7 @@ export async function POST(req: Request) {
           createdAt: now,
         })
       }
+
       effectiveChatId = id
     }
 
@@ -85,11 +94,12 @@ export async function POST(req: Request) {
     const response = result.toTextStreamResponse()
     response.headers.set("X-Chat-Id", effectiveChatId!)
     return response
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const e = err as { statusCode?: number; message?: string }
     const msg =
-      err?.statusCode === 403
+      e?.statusCode === 403
         ? "Access to the AI provider was forbidden. Check credits or API key."
-        : err?.message || "Failed to generate response."
-    return Response.json({ error: msg }, { status: Number(err?.statusCode) || 500 })
+        : e?.message || "Failed to generate response."
+    return Response.json({ error: msg }, { status: e?.statusCode || 500 })
   }
 }

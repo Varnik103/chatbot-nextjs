@@ -34,7 +34,8 @@ export async function POST(req: Request) {
     })
 
     return Response.json({ url: result.secure_url, publicId: result.public_id })
-  } catch (e: any) {
+  } catch (err: unknown) {
+    const e = err as { statusCode?: number; message?: string }
     return Response.json({ error: e?.message || "Upload failed" }, { status: 500 })
   }
 }
