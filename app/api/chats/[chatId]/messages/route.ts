@@ -13,7 +13,7 @@ export async function GET(_: Request, context: { params: Promise<{ chatId: strin
 
   const msgs = await db
     .collection("messages")
-    .find({ chatId })
+    .find({ chatId, archived: { $ne: true } })
     .project({ _id: 0 })
     .sort({ createdAt: 1 })
     .toArray()
@@ -50,6 +50,7 @@ export async function POST(req: Request, context: { params: Promise<{ chatId: st
     parts: { text: body.content },
     attachments: body.attachments ?? [],
     createdAt,
+    archived: false
   }
 
   await db.collection("messages").insertOne(doc)
