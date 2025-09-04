@@ -12,7 +12,13 @@ import { toast } from "sonner"
 
 
 type Role = "system" | "user" | "assistant" | "data" | "tool"
-type Message = { id: string; role: Role; content: string; attachments?: string[] }
+type Attachment = { url: string; name: string; type: string }
+type Message = {
+  id: string
+  role: Role
+  content: string
+  attachments?: Attachment[]
+}
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
@@ -23,7 +29,7 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [pendingAttachments, setPendingAttachments] = useState<string[]>([])
+  const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([])
   const abortRef = useRef<AbortController | null>(null)
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const stoppedRef = useRef(false)   // 👈 track stop state
@@ -50,7 +56,7 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
     baseMessages: { role: Role; content: string }[],
     assistantId: string,
     controller: AbortController,
-    opts?: { chatId?: string; lastAttachments?: string[] },
+    opts?: { chatId?: string; lastAttachments?: Attachment[] },
   ) {
     const res = await fetch("/api/chat", {
       method: "POST",
@@ -231,19 +237,27 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
     }
   }
 
-  async function handleFileSelect(file: File) {
+  async function handleFileSelect(file: File): Promise<string> {
+    if (pendingAttachments.length >= 2) {
+      toast.error("You can attach up to 2 files only.")
+      return Promise.resolve(""); // Return an empty string to satisfy the type
+    }
+
     const form = new FormData()
     form.append("file", file)
     const res = await fetch("/api/files/upload", { method: "POST", body: form })
     if (!res.ok) {
       const msg = await res.text().catch(() => "")
-      return toast.error("Upload failed", { description: msg || "Unable to upload file." })
+      toast.error("Upload failed", { description: msg || "Unable to upload file." })
+      return Promise.resolve(""); // Return an empty string to satisfy the type
     }
     const { url } = await res.json()
-    setPendingAttachments((prev) => [...prev, url])
+    setPendingAttachments((prev) => [
+      ...prev,
+      { url, name: file.name, type: file.type },
+    ])
+    return url; // Always return a string
   }
-
-  const isImageUrl = (u: string) => /\.(png|jpe?g|gif|webp|avif|svg)(\?.*)?$/i.test(u)
 
   return (
     <section className="flex flex-col flex-1">
@@ -294,7 +308,9 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
             onStop={onStop}
             onFileSelect={handleFileSelect}
             attachments={pendingAttachments}
-            onRemoveAttachment={(u) => setPendingAttachments((prev) => prev.filter((x) => x !== u))}
+            onRemoveAttachment={(file) =>
+              setPendingAttachments((prev) => prev.filter((x) => x.url !== file))
+            }
           />
           <p className="mt-2 text-xs text-muted-foreground text-center">
             AI responses may be inaccurate. Verify important information.

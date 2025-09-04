@@ -6,14 +6,16 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Send, Paperclip, Loader2 } from "lucide-react"
 
+type Attachment = { url: string; name: string }
+
 type Props = {
   value: string
   onChange: (v: string) => void
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void
   onStop?: () => void
   disabled?: boolean
-  onFileSelect?: (file: File) => Promise<any>
-  attachments?: string[]
+  onFileSelect?: (file: File) => Promise<string> // returns uploaded URL
+  attachments?: Attachment[]
   onRemoveAttachment?: (url: string) => void
 }
 
@@ -31,12 +33,28 @@ export function ChatInput({
   const fileRef = useRef<HTMLInputElement | null>(null)
   const [uploading, setUploading] = useState(false)
 
+  async function handleFiles(files: File[]) {
+    if (!onFileSelect) return
+    setUploading(true)
+    try {
+      for (const f of files) {
+        if (attachments.length >= 2) break // 🚫 limit to 2
+        const url = await onFileSelect(f)
+        // Instead of just URL, we keep both
+        attachments.push({ url, name: f.name })
+      }
+    } finally {
+      setUploading(false)
+      if (fileRef.current) fileRef.current.value = ""
+    }
+  }
+
   return (
     <form
       ref={formRef}
       onSubmit={(e) => {
         e.preventDefault()
-        if (!uploading) onSubmit(e) // 🚫 block while uploading
+        if (!uploading) onSubmit(e)
       }}
       className="flex flex-col gap-2"
       aria-label="Send a message"
@@ -45,16 +63,16 @@ export function ChatInput({
         <div className="rounded-md border p-2">
           <p className="text-xs font-medium mb-2 text-muted-foreground">Attachments</p>
           <div className="flex flex-wrap gap-2">
-            {attachments.map((u) => {
-              const isImg = /\.(png|jpe?g|gif|webp|avif|svg)(\?.*)?$/i.test(u)
+            {attachments.map((att) => {
+              const isImg = /\.(png|jpe?g|gif|webp|avif|svg)(\?.*)?$/i.test(att.name)
               return isImg ? (
                 <div
-                  key={u}
+                  key={att.url}
                   className="relative w-16 h-16 overflow-hidden rounded border flex items-center justify-center"
                 >
                   <img
-                    src={u || "/placeholder.svg"}
-                    alt="Attachment preview"
+                    src={att.url || "/placeholder.svg"}
+                    alt={att.name}
                     className="object-cover w-full h-full"
                     crossOrigin="anonymous"
                   />
@@ -69,7 +87,7 @@ export function ChatInput({
                       size="icon"
                       variant="secondary"
                       className="absolute -top-1 -right-1 rounded-full w-5 h-5 p-0 text-xs"
-                      onClick={() => onRemoveAttachment(u)}
+                      onClick={() => onRemoveAttachment(att.url)}
                       aria-label="Remove attachment"
                       disabled={uploading}
                     >
@@ -79,10 +97,11 @@ export function ChatInput({
                 </div>
               ) : (
                 <div
-                  key={u}
+                  key={att.url}
                   className="relative px-2 py-1 text-xs rounded border bg-muted max-w-[120px] truncate"
+                  title={att.name}
                 >
-                  {u.split("/").pop()}
+                  {att.name}
                   {uploading && (
                     <Loader2 className="size-3 ml-1 inline animate-spin text-muted-foreground" />
                   )}
@@ -92,7 +111,7 @@ export function ChatInput({
                       size="icon"
                       variant="secondary"
                       className="absolute -top-1 -right-1 rounded-full w-5 h-5 p-0 text-xs"
-                      onClick={() => onRemoveAttachment(u)}
+                      onClick={() => onRemoveAttachment(att.url)}
                       aria-label="Remove attachment"
                       disabled={uploading}
                     >
@@ -115,16 +134,9 @@ export function ChatInput({
           className="hidden"
           onChange={async (e) => {
             const files = Array.from(e.target.files || [])
-            if (files.length && onFileSelect) {
-              setUploading(true)
-              try {
-                for (const f of files) {
-                  await onFileSelect(f)
-                }
-              } finally {
-                setUploading(false)
-                if (fileRef.current) fileRef.current.value = ""
-              }
+            if (files.length) {
+              const allowed = files.slice(0, 2 - attachments.length) // 🚫 max 2
+              await handleFiles(allowed)
             }
           }}
         />
@@ -134,7 +146,7 @@ export function ChatInput({
           className="px-2 bg-transparent"
           aria-label="Attach file"
           onClick={() => fileRef.current?.click()}
-          disabled={uploading}
+          disabled={uploading || attachments.length >= 2}
         >
           <Paperclip className="size-4" />
         </Button>

@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import { Pencil } from "lucide-react"
 
+type Attachment = { url: string; name: string; type: string }
 
 type Props = {
   role: "system" | "user" | "assistant" | "data" | "tool"
@@ -15,7 +16,7 @@ type Props = {
   onEditChange?: (v: string) => void
   onEditSave?: () => void
   onEditCancel?: () => void
-  attachments?: string[]
+  attachments?: Attachment[]
 }
 
 export function ChatMessage({
@@ -32,6 +33,9 @@ export function ChatMessage({
 }: Props) {
   const isUser = role === "user"
   const isAssistant = role === "assistant" || role === "system"
+
+  const isImageUrl = (u: string) =>
+    /\.(png|jpe?g|gif|webp|avif|svg)(\?.*)?$/i.test(u)
 
   return (
     <div
@@ -75,12 +79,25 @@ export function ChatMessage({
           <>
             <p className="whitespace-pre-wrap">{isTyping ? "Thinking…" : content}</p>
             {attachments && attachments.length > 0 ? (
-              <ul className="mt-2 space-y-1">
+              <ul className="mt-2 space-y-2">
                 {attachments.map((a) => (
-                  <li key={a}>
-                    <a className="underline text-xs" href={a} target="_blank" rel="noreferrer">
-                      {a}
-                    </a>
+                  <li key={a.url}>
+                    {isImageUrl(a.url) ? (
+                      <img
+                        src={a.url}
+                        alt={a.name}
+                        className="max-h-30 rounded border"
+                      />
+                    ) : (
+                      <a
+                        className="underline text-xs break-all"
+                        href={a.url}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        📎 {a.name}
+                      </a>
+                    )}
                   </li>
                 ))}
               </ul>
