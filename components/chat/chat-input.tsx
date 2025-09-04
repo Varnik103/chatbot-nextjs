@@ -135,11 +135,11 @@ export function ChatInput({
           }}
         />
         <div className="flex gap-2">
-          {disabled && onStop ? (
+          {/* {disabled && onStop ? (
             <Button type="button" variant="outline" onClick={onStop}>
               Stop
             </Button>
-          ) : null}
+          ) : null} */}
           <Button type="submit" className="bg-blue-600 hover:bg-blue-600/90">
             <Send className="size-4 mr-1" />
             Send

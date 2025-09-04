@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import { mutate as globalMutate } from "swr"
 import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import useSWR from "swr"
@@ -8,6 +9,7 @@ import { ChatMessage } from "./chat-message"
 import { ChatInput } from "./chat-input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { toast } from "sonner"
+
 
 type Role = "system" | "user" | "assistant" | "data" | "tool"
 type Message = { id: string; role: Role; content: string; attachments?: string[] }
@@ -24,6 +26,8 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
   const [pendingAttachments, setPendingAttachments] = useState<string[]>([])
   const abortRef = useRef<AbortController | null>(null)
   const scrollRef = useRef<HTMLDivElement | null>(null)
+  const stoppedRef = useRef(false)   // 👈 track stop state
+
 
   const { data, mutate } = useSWR<{ messages: Message[] }>(
     localChatId ? `/api/chats/${localChatId}/messages` : null,
@@ -68,7 +72,7 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
     const newChatId = res.headers.get("x-chat-id")
     if (newChatId && !localChatId) {
       setLocalChatId(newChatId)
-      router.replace(`/chat/${newChatId}`)
+      router.replace(`/chat/${newChatId}`, {scroll: false})
       setTimeout(() => mutate(), 0)
     }
 
@@ -76,6 +80,7 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
     const decoder = new TextDecoder()
     let buffer = ""
     while (true) {
+      if (stoppedRef.current) break  // 👈 check stop state
       const { value, done } = await reader.read()
       if (done) break
       buffer += decoder.decode(value, { stream: true })
@@ -124,6 +129,7 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
     setPendingAttachments([])
 
     setIsLoading(true)
+    stoppedRef.current = false   // 👈 reset stop state
     const controller = new AbortController()
     abortRef.current = controller
 
@@ -151,6 +157,7 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
         { chatId: localChatId, lastAttachments: userMsg.attachments },
       )
       mutate()
+      globalMutate("/api/history")
     } catch {
       setMessages((prev) =>
         prev.map((m) =>
@@ -164,9 +171,18 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
   }
 
   function onStop() {
+    stoppedRef.current = true
     abortRef.current?.abort()
     abortRef.current = null
     setIsLoading(false)
+
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.role === "assistant" && !m.content
+          ? { ...m, content: "⚠️ Generation stopped due to user action.", error: true }
+          : m
+      )
+    )
   }
 
   // Edit support: PATCH message and regenerate

@@ -2,6 +2,8 @@
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
+import { Pencil } from "lucide-react"
+
 
 type Props = {
   role: "system" | "user" | "assistant" | "data" | "tool"
@@ -51,11 +53,12 @@ export function ChatMessage({
         {isEditing && isUser ? (
           <div className="space-y-2">
             <textarea
-              className="w-full bg-background/70 text-foreground rounded-md p-2 text-sm"
+              className="w-full bg-background/70 text-foreground rounded-md p-2 text-sm resize-y min-h-10 max-h-40"
               value={editValue}
               onChange={(e) => onEditChange?.(e.target.value)}
               rows={3}
             />
+
             <div className={cn("flex gap-2", isUser ? "justify-end" : "justify-start")}>
               <button onClick={onEditSave} className="px-2 py-1 rounded bg-primary text-primary-foreground text-xs">
                 Save
@@ -96,7 +99,7 @@ export function ChatMessage({
               className="self-center text-xs text-muted-foreground hover:underline"
               aria-label="Edit message"
             >
-              Edit
+              <Pencil className="size-4" />
             </button>
           ) : null}
         </div>
