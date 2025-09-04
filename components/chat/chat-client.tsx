@@ -32,6 +32,10 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
 
   useEffect(() => {
     if (data?.messages) setMessages(data.messages)
+    // else {
+    //   router.push('/chat');
+    //   // toast.error("No chat found!") //user sign in check
+    // }
   }, [data?.messages])
 
   useEffect(() => {
@@ -265,7 +269,7 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
       </div>
 
       <div className="sticky bottom-0 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t">
-        <div className="px-4 py-3 md:px-6 md:py-4">
+        <div className="mx-auto w-full max-w-3xl px-4 py-3 md:px-6 md:py-4">
           <ChatInput
             value={input}
             onChange={setInput}

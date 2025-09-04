@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation"
 export default function NewChatPage() {
   const router = useRouter()
   useEffect(() => {
-    let alive = true
-    ;(async () => {
+    let alive = true;
+    (async () => {
       const res = await fetch("/api/chats", { method: "POST" })
       if (!res.ok) {
         router.replace("/")

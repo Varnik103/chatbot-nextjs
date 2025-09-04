@@ -40,7 +40,7 @@ export default function ChatPage() {
          <ChatSidebar
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
-          collapsed={!sidebarOpen || window.innerWidth < 1024}
+          collapsed={!sidebarOpen}
         />
         <div className="flex-1 flex flex-col">
           <header className="sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">

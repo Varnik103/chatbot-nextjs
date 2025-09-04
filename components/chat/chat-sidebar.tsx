@@ -41,7 +41,7 @@ export function ChatSidebar({
 
   async function newChat() {
     router.push("/chat")
-    onClose()
+    // onClose()
   }
 
   async function deleteChat(id: string) {
