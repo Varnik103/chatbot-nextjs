@@ -40,6 +40,7 @@ export type MessageDoc = {
   // parts?: any
   attachments?: string[]
   content?: string
+  // jk
   createdAt: number
 }
 export type UserDoc = {
