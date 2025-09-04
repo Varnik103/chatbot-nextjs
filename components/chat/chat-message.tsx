@@ -64,7 +64,11 @@ export function ChatMessage({
             />
 
             <div className={cn("flex gap-2", isUser ? "justify-end" : "justify-start")}>
-              <button onClick={onEditSave} className="px-2 py-1 rounded bg-primary text-primary-foreground text-xs">
+              <button
+                onClick={onEditSave}
+                disabled={editValue?.trim() === content.trim() || editValue === ""}   // 👈 disable if unchanged
+                className="px-2 py-1 rounded bg-primary text-primary-foreground text-xs disabled:opacity-50"
+              >
                 Save
               </button>
               <button

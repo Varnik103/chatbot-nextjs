@@ -196,46 +196,65 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
   const [editingText, setEditingText] = useState<string>("")
 
   async function saveEdit() {
-    if (!editingId) return
-    const idx = messages.findIndex((m) => m.id === editingId)
-    if (idx < 0) return
-    const edited = { ...messages[idx], content: editingText }
-    // Persist edit
-    await fetch(`/api/messages/${edited.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: edited.content }),
-    })
-    // Remove following messages and regenerate
-    const next = messages.slice(0, idx + 1)
-    next[idx] = edited
-    setMessages(next)
+  if (!editingId) return
+  const idx = messages.findIndex((m) => m.id === editingId)
+  if (idx < 0) return
+
+  // prevent save if no change
+  if (messages[idx].content === editingText.trim()) {
     setEditingId(null)
     setEditingText("")
-    const controller = new AbortController()
-    abortRef.current = controller
-    setIsLoading(true)
-    const assistantId = crypto.randomUUID()
-    setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "" }])
-    try {
-      await streamCompletion(
-        next.map(({ role, content }) => ({ role, content })),
-        assistantId,
-        controller,
-        { chatId: localChatId },
-      )
-      mutate()
-    } catch {
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantId ? { ...m, content: (m.content || "") + "\n[Error streaming response]" } : m,
-        ),
-      )
-    } finally {
-      setIsLoading(false)
-      abortRef.current = null
-    }
+    return
   }
+
+  const edited = { ...messages[idx], content: editingText.trim() }
+
+  // Persist edit
+  await fetch(`/api/messages/${edited.id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content: edited.content }),
+  })
+
+  // Cut conversation history right after edited message
+  const next = messages.slice(0, idx + 1)
+  next[idx] = edited
+  setMessages(next)
+
+  // Reset editing state
+  setEditingId(null)
+  setEditingText("")
+
+  // Start regeneration
+  const controller = new AbortController()
+  abortRef.current = controller
+  setIsLoading(true)
+
+  const assistantId = crypto.randomUUID()
+  setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "" }])
+
+  try {
+    await streamCompletion(
+      next.map(({ role, content }) => ({ role, content })),
+      assistantId,
+      controller,
+      { chatId: localChatId },
+    )
+    mutate()
+  } catch {
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === assistantId
+          ? { ...m, content: (m.content || "") + "\n⚠️ Error regenerating response" }
+          : m
+      ),
+    )
+  } finally {
+    setIsLoading(false)
+    abortRef.current = null
+  }
+}
+
 
   async function handleFileSelect(file: File): Promise<string> {
     if (pendingAttachments.length >= 2) {
