@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import { mutate as globalMutate } from "swr"
 import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import useSWR from "swr"
@@ -9,8 +10,15 @@ import { ChatInput } from "./chat-input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { toast } from "sonner"
 
+
 type Role = "system" | "user" | "assistant" | "data" | "tool"
-type Message = { id: string; role: Role; content: string; attachments?: string[] }
+type Attachment = { url: string; name: string; type: string }
+type Message = {
+  id: string
+  role: Role
+  content: string
+  attachments?: Attachment[]
+}
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
@@ -21,9 +29,11 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [pendingAttachments, setPendingAttachments] = useState<string[]>([])
+  const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([])
   const abortRef = useRef<AbortController | null>(null)
   const scrollRef = useRef<HTMLDivElement | null>(null)
+  const stoppedRef = useRef(false)   // 👈 track stop state
+
 
   const { data, mutate } = useSWR<{ messages: Message[] }>(
     localChatId ? `/api/chats/${localChatId}/messages` : null,
@@ -46,7 +56,7 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
     baseMessages: { role: Role; content: string }[],
     assistantId: string,
     controller: AbortController,
-    opts?: { chatId?: string; lastAttachments?: string[] },
+    opts?: { chatId?: string; lastAttachments?: Attachment[] },
   ) {
     const res = await fetch("/api/chat", {
       method: "POST",
@@ -68,7 +78,7 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
     const newChatId = res.headers.get("x-chat-id")
     if (newChatId && !localChatId) {
       setLocalChatId(newChatId)
-      router.replace(`/chat/${newChatId}`)
+      router.replace(`/chat/${newChatId}`, {scroll: false})
       setTimeout(() => mutate(), 0)
     }
 
@@ -76,6 +86,7 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
     const decoder = new TextDecoder()
     let buffer = ""
     while (true) {
+      if (stoppedRef.current) break  // 👈 check stop state
       const { value, done } = await reader.read()
       if (done) break
       buffer += decoder.decode(value, { stream: true })
@@ -124,6 +135,7 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
     setPendingAttachments([])
 
     setIsLoading(true)
+    stoppedRef.current = false   // 👈 reset stop state
     const controller = new AbortController()
     abortRef.current = controller
 
@@ -151,6 +163,7 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
         { chatId: localChatId, lastAttachments: userMsg.attachments },
       )
       mutate()
+      globalMutate("/api/history")
     } catch {
       setMessages((prev) =>
         prev.map((m) =>
@@ -164,9 +177,18 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
   }
 
   function onStop() {
+    stoppedRef.current = true
     abortRef.current?.abort()
     abortRef.current = null
     setIsLoading(false)
+
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.role === "assistant" && !m.content
+          ? { ...m, content: "⚠️ Generation stopped due to user action.", error: true }
+          : m
+      )
+    )
   }
 
   // Edit support: PATCH message and regenerate
@@ -215,19 +237,27 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
     }
   }
 
-  async function handleFileSelect(file: File) {
+  async function handleFileSelect(file: File): Promise<string> {
+    if (pendingAttachments.length >= 2) {
+      toast.error("You can attach up to 2 files only.")
+      return Promise.resolve(""); // Return an empty string to satisfy the type
+    }
+
     const form = new FormData()
     form.append("file", file)
     const res = await fetch("/api/files/upload", { method: "POST", body: form })
     if (!res.ok) {
       const msg = await res.text().catch(() => "")
-      return toast.error("Upload failed", { description: msg || "Unable to upload file." })
+      toast.error("Upload failed", { description: msg || "Unable to upload file." })
+      return Promise.resolve(""); // Return an empty string to satisfy the type
     }
     const { url } = await res.json()
-    setPendingAttachments((prev) => [...prev, url])
+    setPendingAttachments((prev) => [
+      ...prev,
+      { url, name: file.name, type: file.type },
+    ])
+    return url; // Always return a string
   }
-
-  const isImageUrl = (u: string) => /\.(png|jpe?g|gif|webp|avif|svg)(\?.*)?$/i.test(u)
 
   return (
     <section className="flex flex-col flex-1">
@@ -278,7 +308,9 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
             onStop={onStop}
             onFileSelect={handleFileSelect}
             attachments={pendingAttachments}
-            onRemoveAttachment={(u) => setPendingAttachments((prev) => prev.filter((x) => x !== u))}
+            onRemoveAttachment={(file) =>
+              setPendingAttachments((prev) => prev.filter((x) => x.url !== file))
+            }
           />
           <p className="mt-2 text-xs text-muted-foreground text-center">
             AI responses may be inaccurate. Verify important information.
