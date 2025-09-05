@@ -43,15 +43,15 @@ export function ChatMessage({
       role="listitem"
       aria-live={isAssistant ? "polite" : undefined}
     >
-      {!isUser && (
+      {/* {!isUser && (
         <Avatar className="size-8">
           <AvatarFallback aria-hidden="true">AI</AvatarFallback>
         </Avatar>
-      )}
+      )} */}
       <div
         className={cn(
           "max-w-[85%] md:max-w-[70%] rounded-lg px-3 py-2 text-sm leading-relaxed",
-          isUser ? "bg-blue-600 text-white" : "bg-muted",
+          isUser ? "bg-[rgba(48,48,48,255)] text-white" : "",
         )}
       >
         {isEditing && isUser ? (
@@ -111,9 +111,9 @@ export function ChatMessage({
       </div>
       {isUser && (
         <div className="flex items-start gap-2">
-          <Avatar className="size-8">
+          {/* <Avatar className="size-8">
             <AvatarFallback aria-hidden="true">U</AvatarFallback>
-          </Avatar>
+          </Avatar> */}
           {!isEditing && onEdit ? (
             <button
               onClick={onEdit}
