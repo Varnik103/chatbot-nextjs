@@ -1,8 +1,9 @@
 "use client"
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
-import { Pencil } from "lucide-react"
+import { Pencil, Copy } from "lucide-react"
+import { useState } from "react"
+import { toast } from "sonner"
 
 type Attachment = { url: string; name: string; type: string }
 
@@ -33,47 +34,55 @@ export function ChatMessage({
 }: Props) {
   const isUser = role === "user"
   const isAssistant = role === "assistant" || role === "system"
+  const [copied, setCopied] = useState(false)
 
   const isImageUrl = (u: string) =>
     /\.(png|jpe?g|gif|webp|avif|svg)(\?.*)?$/i.test(u)
 
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(content || "")
+      setCopied(true)
+      toast.success("Copied to clipboard!", { duration: 1000 });
+      setTimeout(() => setCopied(false), 1500)
+    } catch (err) {
+      toast.error("Failed to copy clipboard!", { duration: 1000 });
+      console.error("Failed to copy:", err)
+    }
+  }
+
   return (
     <div
-      className={cn("flex items-start gap-3", isUser ? "justify-end" : "justify-start")}
+      className={cn("flex flex-col group", isUser ? "items-end" : "items-start")}
       role="listitem"
       aria-live={isAssistant ? "polite" : undefined}
     >
-      {/* {!isUser && (
-        <Avatar className="size-8">
-          <AvatarFallback aria-hidden="true">AI</AvatarFallback>
-        </Avatar>
-      )} */}
+      {/* message bubble */}
       <div
         className={cn(
-          "max-w-[85%] md:max-w-[70%] rounded-lg px-3 py-2 text-sm leading-relaxed",
-          isUser ? "bg-[rgba(48,48,48,255)] text-white" : "",
+          "relative max-w-[85%] md:max-w-[70%] rounded-lg px-3 py-2 text-sm leading-relaxed",
+          isUser ? "bg-[#303030] text-white" : "bg-muted"
         )}
       >
         {isEditing && isUser ? (
-          <div className="space-y-2">
+          <div className="space-y-3">
             <textarea
-              className="w-full bg-background/70 text-foreground rounded-md p-2 text-sm resize-y min-h-10 max-h-40"
+              className="w-full rounded-md border border-border bg-background/70 text-foreground p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px]"
               value={editValue}
               onChange={(e) => onEditChange?.(e.target.value)}
-              rows={3}
             />
 
-            <div className={cn("flex gap-2", isUser ? "justify-end" : "justify-start")}>
+            <div className="flex gap-2 justify-end">
               <button
                 onClick={onEditSave}
-                disabled={editValue?.trim() === content.trim() || editValue === ""}   // 👈 disable if unchanged
-                className="px-2 py-1 rounded bg-primary text-primary-foreground text-xs disabled:opacity-50"
+                disabled={editValue?.trim() === content.trim() || !editValue?.trim()}
+                className="px-3 py-1.5 rounded-md bg-blue-600 text-white text-xs font-medium hover:bg-blue-600/90 disabled:opacity-50"
               >
-                Save
+                Save & Regenerate
               </button>
               <button
                 onClick={onEditCancel}
-                className="px-2 py-1 rounded bg-secondary text-secondary-foreground text-xs"
+                className="px-3 py-1.5 rounded-md border text-xs font-medium hover:bg-accent"
               >
                 Cancel
               </button>
@@ -81,8 +90,12 @@ export function ChatMessage({
           </div>
         ) : (
           <>
-            <p className="whitespace-pre-wrap">{isTyping ? "Thinking…" : content}</p>
-            {attachments && attachments.length > 0 ? (
+            <p className="whitespace-pre-wrap">
+              {isTyping ? "Thinking…" : content}
+            </p>
+
+            {/* attachments */}
+            {attachments && attachments.length > 0 && (
               <ul className="mt-2 space-y-2">
                 {attachments.map((a) => (
                   <li key={a.url}>
@@ -90,7 +103,7 @@ export function ChatMessage({
                       <img
                         src={a.url}
                         alt={a.name}
-                        className="max-h-30 rounded border"
+                        className="max-h-40 rounded border"
                       />
                     ) : (
                       <a
@@ -105,24 +118,43 @@ export function ChatMessage({
                   </li>
                 ))}
               </ul>
-            ) : null}
+            )}
           </>
         )}
       </div>
-      {isUser && (
-        <div className="flex items-start gap-2">
-          {/* <Avatar className="size-8">
-            <AvatarFallback aria-hidden="true">U</AvatarFallback>
-          </Avatar> */}
-          {!isEditing && onEdit ? (
+
+      {/* actions */}
+      {!isEditing && (
+        <div
+          className={cn(
+            "mt-2 flex gap-3 text-muted-foreground",
+            isUser
+              ? "justify-end opacity-0 group-hover:opacity-100 transition-opacity"
+              : "justify-start" // assistant always visible
+          )}
+        >
+          {/* edit only for user messages without attachments */}
+          {isUser && onEdit && (!attachments || attachments.length === 0) && (
             <button
               onClick={onEdit}
-              className="self-center text-xs text-muted-foreground hover:underline"
+              className="hover:text-foreground"
               aria-label="Edit message"
             >
               <Pencil className="size-4" />
             </button>
-          ) : null}
+          )}
+
+          {/* copy for all */}
+          <button
+            onClick={handleCopy}
+            className="hover:text-foreground"
+            aria-label="Copy message"
+          >
+            <Copy className="size-4" />
+            {/* {copied && (
+              toast.success("Copied to clipboard!", { duration: 1000 });
+            )} */}
+          </button>
         </div>
       )}
     </div>
