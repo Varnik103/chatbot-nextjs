@@ -5,6 +5,8 @@ import { Pencil, Copy } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import TextareaAutosize from "react-textarea-autosize";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 type Attachment = { url: string; name: string; type: string };
 
@@ -42,9 +44,9 @@ export function ChatMessage({
   const isImageUrl = (u: string) =>
     /\.(png|jpe?g|gif|webp|avif|svg)(\?.*)?$/i.test(u);
 
-  async function handleCopy() {
+  async function handleCopy(textToCopy?: string) {
     try {
-      await navigator.clipboard.writeText(content || "");
+      await navigator.clipboard.writeText(textToCopy || content || "");
       setCopied(true);
       toast.success("Copied to clipboard!", { duration: 1000 });
       setTimeout(() => setCopied(false), 1500);
@@ -52,6 +54,22 @@ export function ChatMessage({
       toast.error("Failed to copy clipboard!", { duration: 1000 });
       console.error("Failed to copy:", err);
     }
+  }
+
+  // 👉 Detect code blocks with ```lang ... ```
+  const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
+  const parts: (string | { lang: string; code: string })[] = [];
+  let lastIndex = 0;
+  let match;
+  while ((match = codeBlockRegex.exec(content))) {
+    if (match.index > lastIndex) {
+      parts.push(content.slice(lastIndex, match.index));
+    }
+    parts.push({ lang: match[1] || "plaintext", code: match[2].trim() });
+    lastIndex = codeBlockRegex.lastIndex;
+  }
+  if (lastIndex < content.length) {
+    parts.push(content.slice(lastIndex));
   }
 
   return (
@@ -114,12 +132,11 @@ export function ChatMessage({
       {(isTyping || content.trim()) && (
         <>
           {isEditing && isUser ? (
-            // full-width edit box
-            <div className="w-full max-w-3xl border rounded-2xl bg-[#424242] text-white">
+            <div className="w-full max-w-3xl border rounded-md">
               <TextareaAutosize
-                minRows={2}
-                maxRows={8}
-                className="w-full rounded-md text-foreground p-4 text-sm resize-none focus:outline-none min-h-[80px] bg-[#424242] text-white mt-4"
+                minRows={3}
+                maxRows={12}
+                className="w-full rounded-md text-foreground p-4 text-sm resize-none focus:outline-none min-h-[80px] bg-background"
                 value={editValue}
                 onChange={(e) => onEditChange?.(e.target.value)}
               />
@@ -144,16 +161,44 @@ export function ChatMessage({
               </div>
             </div>
           ) : (
-            // normal message bubble
             <div
               className={cn(
                 "relative max-w-[85%] md:max-w-[70%] rounded-lg px-3 py-2 text-sm leading-relaxed overflow-hidden break-words",
                 isUser ? "bg-[#303030] text-white" : ""
               )}
             >
-              <p className="whitespace-pre-wrap break-words break-all">
-                {isTyping ? "Thinking…" : content}
-              </p>
+              {parts.map((part, i) =>
+                typeof part === "string" ? (
+                  <p
+                    key={i}
+                    className="whitespace-pre-wrap break-words break-all"
+                  >
+                    {part}
+                  </p>
+                ) : (
+                  <div key={i} className="relative my-3">
+                    <div className="absolute top-2 right-2">
+                      <button
+                        onClick={() => handleCopy(part.code)}
+                        className="text-xs px-2 py-1 bg-gray-700 text-white rounded hover:bg-gray-600"
+                      >
+                        {copied ? "Copied!" : "Copy"}
+                      </button>
+                    </div>
+                    <SyntaxHighlighter
+                      language={part.lang}
+                      style={oneDark}
+                      customStyle={{
+                        borderRadius: "0.5rem",
+                        padding: "1rem",
+                        fontSize: "0.85rem",
+                      }}
+                    >
+                      {part.code}
+                    </SyntaxHighlighter>
+                  </div>
+                )
+              )}
             </div>
           )}
         </>
@@ -169,7 +214,6 @@ export function ChatMessage({
               : "justify-start" // assistant always visible
           )}
         >
-          {/* edit only for user messages without attachments */}
           {isUser && onEdit && (!attachments || attachments.length === 0) && (
             <button
               onClick={onEdit}
@@ -179,10 +223,8 @@ export function ChatMessage({
               <Pencil className="size-4" />
             </button>
           )}
-
-          {/* copy for all */}
           <button
-            onClick={handleCopy}
+            onClick={() => handleCopy()}
             className="hover:text-foreground"
             aria-label="Copy message"
           >
