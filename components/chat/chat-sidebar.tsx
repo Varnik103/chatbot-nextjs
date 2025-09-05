@@ -68,11 +68,11 @@ export function ChatSidebar({
     <>
       {/* Desktop rail */}
       <aside
-        className={`hidden ${collapsed ? "md:hidden" : "md:flex md:w-72 md:shrink-0"} md:flex-col border-r bg-sidebar text-sidebar-foreground`}
+        className={`hidden ${collapsed ? "md:hidden" : "md:flex md:w-55 md:shrink-0"} md:flex-col border-r bg-[#181818] text-sidebar-foreground`}
         aria-label="Chat sidebar"
       >
         <div className="px-4 py-2">
-          <Button onClick={newChat} className="w-full bg-blue-600 hover:bg-blue-600/90">
+          <Button onClick={newChat} className="w-full text-white bg-[#181818] hover:bg-[#303030]">
             <Plus className="size-4 mr-2" />
             New chat
           </Button>
@@ -84,31 +84,37 @@ export function ChatSidebar({
               <p className="px-2 py-1.5 text-xs text-muted-foreground">No conversations yet</p>
             ) : (
               sorted.map((s) => (
-                <div key={s.id} className="flex items-center gap-1 px-1">
+                <div key={s.id} className={`flex items-center gap-1 px-1 group transition-colors ${
+                      activeChatId === s.id ? "bg-[#242424]" : "hover:bg-sidebar-accent"
+                    } rounded-md`}>
                   <button
                     onClick={() => goToSession(s.id)}
-                    className={`flex-1 text-left px-3 py-2 rounded-md text-sm hover:bg-sidebar-accent transition-colors ${
-                      activeChatId === s.id ? "bg-sidebar-accent border-l-2 border-blue-600" : ""
-                    }`}
+                    className={`flex-1 text-left px-3 py-2 rounded-md text-sm`}
                     title={s.title || "New chat"}
                   >
                     <span className="line-clamp-1">{s.title || "New chat"}</span>
-                    <span className="block text-xs text-muted-foreground">
+                    {/* <span className="block text-xs text-muted-foreground">
                       {new Date(Number(s.updatedAt ?? s.createdAt)).toLocaleString()}
-                    </span>
+                    </span> */}
                   </button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" aria-label="Chat options">
-                        <MoreVertical className="size-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem key={`delete-${s.id}`} className="text-red-600" onClick={() => deleteChat(s.id)}>
-                        <Trash className="size-4 mr-2" /> Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" aria-label="Chat options">
+          <MoreVertical className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem
+          key={`delete-${s.id}`}
+          className="text-red-600"
+          onClick={() => deleteChat(s.id)}
+        >
+          <Trash className="size-4 mr-2" /> Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  </div>
                 </div>
               ))
             )}

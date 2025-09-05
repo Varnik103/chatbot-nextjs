@@ -70,7 +70,7 @@ export default function ChatPage() {
                 </Button>
                 <h1 className="text-lg md:text-xl font-semibold text-balance">New chat</h1>
               </div>
-              <ThemeToggle />
+              {/* <ThemeToggle /> */}
             </div>
           </header>
           <div className="flex-1 flex flex-col">
