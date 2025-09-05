@@ -109,7 +109,7 @@ export function ChatMessage({
                     </a>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 rounded-md border bg-white p-2 text-xs shadow-sm">
+                  <div className="flex items-center gap-2 rounded-md border p-2 text-xs shadow-sm">
                     <span>📎</span>
                     <span className="truncate max-w-[160px]">{a.name}</span>
                     <a
@@ -223,13 +223,15 @@ export function ChatMessage({
               <Pencil className="size-4" />
             </button>
           )}
-          <button
-            onClick={() => handleCopy()}
-            className="hover:text-foreground"
-            aria-label="Copy message"
-          >
-            <Copy className="size-4" />
-          </button>
+          {!isLoading && (
+            <button
+              onClick={() => handleCopy()}
+              className="hover:text-foreground"
+              aria-label="Copy message"
+            >
+              <Copy className="size-4" />
+            </button>
+          )}
         </div>
       )}
     </div>

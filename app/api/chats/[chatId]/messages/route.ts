@@ -1,5 +1,12 @@
-import { auth } from "@clerk/nextjs/server"
-import { getDb } from "@/lib/mongodb"
+import { auth } from "@clerk/nextjs/server";
+import { getDb } from "@/lib/mongodb";
+import { createMem0, addMemories, retrieveMemories } from "@mem0/vercel-ai-provider";
+
+// Initialize mem0 wrapper
+const mem0 = createMem0({
+  provider: "openai",
+  mem0ApiKey: process.env.MEM0_API_KEY!,
+});
 
 export async function GET(_: Request, context: { params: Promise<{ chatId: string }> }) {
   const { userId } = await auth()
@@ -55,6 +62,9 @@ export async function POST(req: Request, context: { params: Promise<{ chatId: st
 
   await db.collection("messages").insertOne(doc)
   await db.collection("chats").updateOne({ id: chatId }, { $set: { updatedAt: createdAt } })
+
+  // 👉 save memory to mem0
+  await addMemories([{ role: body.role, content: body.content }], { user_id: userId });
 
   return Response.json({ id })
 }

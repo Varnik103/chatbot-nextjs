@@ -2,11 +2,18 @@ import { streamText } from "ai"
 import { xai } from "@ai-sdk/xai"
 import { auth, currentUser } from "@clerk/nextjs/server"
 import { getDb } from "@/lib/mongodb"
+import { createMem0, retrieveMemories } from "@mem0/vercel-ai-provider"
+import { LanguageModelV2Prompt } from "@ai-sdk/provider";
 
 export const dynamic = "force-dynamic"
 
 type Role = "system" | "user" | "assistant" | "data" | "tool"
 type Message = { id?: string; role: Role; content: string; attachments?: string[] }
+
+const mem0 = createMem0({
+  provider: "openai",
+  mem0ApiKey: process.env.MEM0_API_KEY!,
+});
 
 function smartTitle(text: string) {
   const trimmed = (text || "").trim().replace(/\s+/g, " ")
@@ -27,6 +34,10 @@ export async function POST(req: Request) {
     const cu = await currentUser()
     const email = cu?.emailAddresses?.[0]?.emailAddress
     await db.collection("users").updateOne({ id: userId }, { $set: { id: userId, email } }, { upsert: true })
+
+    let memoryPrompt: LanguageModelV2Prompt = messages.map((m: Message) => { return { role: m.role, content: [{ type: "text", text: m.content }] } })
+
+    let memories = await retrieveMemories(memoryPrompt, {user_id: userId})
 
     let effectiveChatId: string | undefined = chatId
 
@@ -52,6 +63,8 @@ export async function POST(req: Request) {
       })
 
       if (firstUser?.content) {
+        memories = await retrieveMemories(firstUser?.content, {user_id: userId})
+
         await db.collection("messages").insertOne({
           id: crypto.randomUUID(),
           chatId: id,
@@ -68,8 +81,7 @@ export async function POST(req: Request) {
 
     const result = await streamText({
       model: xai("grok-4"),
-      system:
-        "You are a helpful, concise AI assistant. Prefer clear step-by-step guidance, avoid hallucinations, and ask clarifying questions when needed.",
+      system: memories,
       messages,
     })
 
