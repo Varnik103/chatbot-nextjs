@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     const email = cu?.emailAddresses?.[0]?.emailAddress
     await db.collection("users").updateOne({ id: userId }, { $set: { id: userId, email } }, { upsert: true })
 
-    let memoryPrompt: LanguageModelV2Prompt = messages.map((m: Message) => { return { role: m.role, content: [{ type: "text", text: m.content }] } })
+    const memoryPrompt: LanguageModelV2Prompt = messages.map((m: Message) => { return { role: m.role, content: [{ type: "text", text: m.content }] } })
 
     let memories = await retrieveMemories(memoryPrompt, {user_id: userId})
 
