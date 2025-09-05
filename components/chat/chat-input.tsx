@@ -42,6 +42,9 @@ export function ChatInput({
         // Instead of just URL, we keep both
         attachments.push({ url, name: f.name })
       }
+    } catch(e){
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
     } finally {
       setUploading(false)
       if (fileRef.current) fileRef.current.value = ""
@@ -62,7 +65,11 @@ export function ChatInput({
       {attachments.length > 0 && (
         <div className="flex flex-wrap gap-2 px-1">
           {attachments.map((att) => {
-            const isImg = /\.(png|jpe?g|gif|webp|avif|svg)$/i.test(att.name)
+            const isImg = /\.(png|jpe?g|gif|webp|avif|svg)$/i.test(att.name);
+            const isPdf = /\.pdf$/i.test(att.name);
+
+            if (!isImg && !isPdf) return null; // 🚫 skip unsupported files
+
             return (
               <div
                 key={att.url}
@@ -74,6 +81,8 @@ export function ChatInput({
                     alt={att.name}
                     className="w-6 h-6 object-cover rounded"
                   />
+                ) : isPdf ? (
+                  <span className="text-red-400">📄 PDF</span>
                 ) : null}
                 <span className="truncate">{att.name}</span>
                 {onRemoveAttachment && (

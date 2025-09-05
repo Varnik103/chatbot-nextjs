@@ -48,6 +48,16 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
     // }
   }, [data?.messages])
 
+  function BlinkingDots() {
+  return (
+    <span className="flex gap-1">
+      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
+      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
+      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+    </span>
+  )
+}
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" })
   }, [messages.length, isLoading])
@@ -259,7 +269,7 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
   async function handleFileSelect(file: File): Promise<string> {
     if (pendingAttachments.length >= 2) {
       toast.error("You can attach up to 2 files only.")
-      return Promise.resolve(""); // Return an empty string to satisfy the type
+      return Promise.reject(""); // Return an empty string to satisfy the type
     }
 
     const form = new FormData()
@@ -268,7 +278,7 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
     if (!res.ok) {
       const msg = await res.text().catch(() => "")
       toast.error("Upload failed", { description: msg || "Unable to upload file." })
-      return Promise.resolve(""); // Return an empty string to satisfy the type
+      return Promise.reject(""); // Return an empty string to satisfy the type
     }
     const { url } = await res.json()
     setPendingAttachments((prev) => [
@@ -313,7 +323,8 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
                 }}
               />
             ))}
-            {isLoading && <ChatMessage role="assistant" content="..." isTyping />}
+            {/* {isLoading && <ChatMessage role="assistant" content="..." isTyping />} */}
+            {isLoading && <BlinkingDots />}
           </div>
         </ScrollArea>
       </div>
