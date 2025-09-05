@@ -11,7 +11,7 @@ import { toast } from "sonner"
 
 export default function ChatPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-    const { isSignedIn } = useAuth()
+  const { isSignedIn } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
@@ -34,16 +34,16 @@ export default function ChatPage() {
   }
 
   return (
-    <main className="min-h-[calc(100dvh)] bg-background text-foreground font-sans">
+    <main className="min-h-[calc(100dvh)] bg-[#212121] text-foreground font-sans">
       <div className="mx-auto w-full max-w-[1920px] h-[100dvh] flex">
         {/* pass collapsed for desktop rail, and open for mobile drawer */}
-         <ChatSidebar
+        <ChatSidebar
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
           collapsed={!sidebarOpen}
         />
         <div className="flex-1 flex flex-col">
-          <header className="sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+          <header className="sticky top-0 z-10 bg-[#212121]/80 backdrop-blur supports-[backdrop-filter]:bg-[#212121]/60 border-b">
             <div className="px-4 py-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {/* Mobile: hamburger */}
@@ -54,7 +54,7 @@ export default function ChatPage() {
                   aria-label="Open sidebar"
                   onClick={() => setSidebarOpen(true)}
                 >
-                  <Menu className="size-5" />
+                  <Menu className="size-5 text-white" />
                 </Button>
                 {/* Desktop: icon toggle instead of text */}
                 <Button
@@ -66,11 +66,13 @@ export default function ChatPage() {
                   onClick={handleSidebarToggle}
                   title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
                 >
-                  <Menu className="size-5" />
+                  <Menu className="size-5 text-white" />
                 </Button>
-                <h1 className="text-lg md:text-xl font-semibold text-balance">New chat</h1>
+                <h1 className="text-lg md:text-xl font-semibold text-white text-balance">
+                  New chat
+                </h1>
               </div>
-              <ThemeToggle />
+              {/* <ThemeToggle /> */}
             </div>
           </header>
           <div className="flex-1 flex flex-col">

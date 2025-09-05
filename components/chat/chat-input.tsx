@@ -1,10 +1,9 @@
 "use client"
 
-import type React from "react"
 import { useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Send, Paperclip, Loader2 } from "lucide-react"
+import { Send, Paperclip, Loader2, X } from "lucide-react"
+import TextareaAutosize from "react-textarea-autosize"
 
 type Attachment = { url: string; name: string }
 
@@ -56,77 +55,44 @@ export function ChatInput({
         e.preventDefault()
         if (!uploading) onSubmit(e)
       }}
-      className="flex flex-col gap-2"
-      aria-label="Send a message"
+      className="w-full flex flex-col gap-2"
+      aria-label="Ask Anything"
     >
-      {attachments.length > 0 ? (
-        <div className="rounded-md border p-2">
-          <p className="text-xs font-medium mb-2 text-muted-foreground">Attachments</p>
-          <div className="flex flex-wrap gap-2">
-            {attachments.map((att) => {
-              const isImg = /\.(png|jpe?g|gif|webp|avif|svg)(\?.*)?$/i.test(att.name)
-              return isImg ? (
-                <div
-                  key={att.url}
-                  className="relative w-16 h-16 overflow-hidden rounded border flex items-center justify-center"
-                >
+      {/* attachments preview */}
+      {attachments.length > 0 && (
+        <div className="flex flex-wrap gap-2 px-1">
+          {attachments.map((att) => {
+            const isImg = /\.(png|jpe?g|gif|webp|avif|svg)$/i.test(att.name)
+            return (
+              <div
+                key={att.url}
+                className="relative flex items-center gap-1 rounded-md border border-gray-600 px-2 py-1 text-xs max-w-[160px] truncate text-white"
+              >
+                {isImg ? (
                   <img
-                    src={att.url || "/placeholder.svg"}
+                    src={att.url}
                     alt={att.name}
-                    className="object-cover w-full h-full"
-                    crossOrigin="anonymous"
+                    className="w-6 h-6 object-cover rounded"
                   />
-                  {uploading && (
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                      <Loader2 className="size-4 animate-spin text-white" />
-                    </div>
-                  )}
-                  {onRemoveAttachment ? (
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="secondary"
-                      className="absolute -top-1 -right-1 rounded-full w-5 h-5 p-0 text-xs"
-                      onClick={() => onRemoveAttachment(att.url)}
-                      aria-label="Remove attachment"
-                      disabled={uploading}
-                    >
-                      ×
-                    </Button>
-                  ) : null}
-                </div>
-              ) : (
-                <div
-                  key={att.url}
-                  className="relative px-2 py-1 text-xs rounded border bg-muted max-w-[120px] truncate"
-                  title={att.name}
-                >
-                  {att.name}
-                  {uploading && (
-                    <Loader2 className="size-3 ml-1 inline animate-spin text-muted-foreground" />
-                  )}
-                  {onRemoveAttachment ? (
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="secondary"
-                      className="absolute -top-1 -right-1 rounded-full w-5 h-5 p-0 text-xs"
-                      onClick={() => onRemoveAttachment(att.url)}
-                      aria-label="Remove attachment"
-                      disabled={uploading}
-                    >
-                      ×
-                    </Button>
-                  ) : null}
-                </div>
-              )
-            })}
-          </div>
+                ) : null}
+                <span className="truncate">{att.name}</span>
+                {onRemoveAttachment && (
+                  <button
+                    type="button"
+                    onClick={() => onRemoveAttachment(att.url)}
+                    className="ml-1 text-gray-300 hover:text-white"
+                  >
+                    <X className="size-3" />
+                  </button>
+                )}
+              </div>
+            )
+          })}
         </div>
-      ) : null}
+      )}
 
-      {/* composer row */}
-      <div className="flex items-end gap-2">
+      {/* Composer row */}
+      <div className="flex items-end gap-2 rounded-4xl px-3 py-2 shadow-sm bg-[#303030] text-white">
         <input
           ref={fileRef}
           type="file"
@@ -135,31 +101,32 @@ export function ChatInput({
           onChange={async (e) => {
             const files = Array.from(e.target.files || [])
             if (files.length) {
-              const allowed = files.slice(0, 2 - attachments.length) // 🚫 max 2
+              const allowed = files.slice(0, 2 - attachments.length)
               await handleFiles(allowed)
             }
           }}
         />
+
+        {/* Attach button */}
         <Button
           type="button"
-          variant="outline"
-          className="px-2 bg-transparent"
-          aria-label="Attach file"
+          size="icon"
+          variant="ghost"
+          className="shrink-0 text-gray-300 hover:text-white "
           onClick={() => fileRef.current?.click()}
           disabled={uploading || attachments.length >= 2}
         >
           <Paperclip className="size-4" />
         </Button>
-        <label htmlFor="chat-input" className="sr-only">
-          Message
-        </label>
-        <Textarea
-          id="chat-input"
+
+        {/* Textarea */}
+        <TextareaAutosize
+          minRows={1}
+          maxRows={5}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={uploading ? "Uploading file…" : "Send a message..."}
-          className="min-h-10 max-h-40 resize-y"
-          rows={2}
+          placeholder={uploading ? "Uploading file…" : "Ask Anything..."}
+          className="flex-1 resize-none bg-transparent text-sm text-white focus:outline-none disabled:opacity-50 px-1 py-2"
           disabled={disabled || uploading}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey && !uploading) {
@@ -168,20 +135,20 @@ export function ChatInput({
             }
           }}
         />
-        <div className="flex gap-2">
-          <Button
-            type="submit"
-            className="bg-blue-600 hover:bg-blue-600/90"
-            disabled={disabled || uploading}
-          >
-            {uploading ? (
-              <Loader2 className="size-4 mr-1 animate-spin" />
-            ) : (
-              <Send className="size-4 mr-1" />
-            )}
-            {uploading ? "Uploading…" : "Send"}
-          </Button>
-        </div>
+
+        {/* Send button */}
+        <Button
+          type="submit"
+          size="icon"
+          className="shrink-0 bg-[#303031] hover:bg-[#505050] text-white"
+          disabled={disabled || uploading}
+        >
+          {uploading ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Send className="size-4" />
+          )}
+        </Button>
       </div>
     </form>
   )

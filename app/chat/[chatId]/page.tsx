@@ -66,9 +66,9 @@ export default function ChatByIdPage({ params }: { params: Promise<{ chatId: str
                 >
                   <Menu className="size-5" />
                 </Button>
-                <h1 className="text-lg md:text-xl font-semibold text-balance">Chat</h1>
+                <h1 className="text-lg md:text-xl font-semibold text-balance">ChatBot</h1>
               </div>
-              <ThemeToggle />
+              {/* <ThemeToggle /> */}
             </div>
           </header>
           <div className="flex-1 flex flex-col">

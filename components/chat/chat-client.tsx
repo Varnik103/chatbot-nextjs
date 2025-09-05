@@ -294,6 +294,7 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
                 role={m.role}
                 content={m.content}
                 attachments={m.attachments}
+                isLoading={isLoading}
                 onEdit={
                   m.role === "user"
                     ? () => {
