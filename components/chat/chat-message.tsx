@@ -103,18 +103,11 @@ export function ChatMessage({
                     <div className="flex items-center gap-2 rounded-md border p-2 text-xs shadow-sm">
                       <span className="text-red-600">📄</span>
                       <span className="truncate max-w-[160px]">{a.name}</span>
-                      {/* <a
-                  href={a.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="ml-auto text-blue-600 hover:underline"
-                >
-                  View
-                </a> */}
                       <a
                         href={a.url}
                         target="_blank"
-                        className="text-green-600 hover:underline"
+                        rel="noreferrer"
+                        className="ml-auto text-blue-400 hover:underline"
                       >
                         View
                       </a>
