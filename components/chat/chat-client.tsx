@@ -59,7 +59,7 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
 }
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" })
+    scrollRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages.length, isLoading])
 
   async function streamCompletion(
@@ -291,7 +291,7 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
   return (
     <section className="flex flex-col flex-1">
       <div className="flex-1">
-        <ScrollArea className="h-[calc(100dvh-56px-88px)] md:h-[calc(100dvh-64px-96px)]" ref={scrollRef}>
+        <ScrollArea className="h-[calc(100dvh-56px-88px)] md:h-[calc(100dvh-64px-96px)]">
           <div className="mx-auto w-full max-w-3xl px-4 py-6 md:px-6 md:py-8 space-y-4">
             {messages.length === 0 && (
               <div className="border rounded-lg p-6 md:p-8 text-center text-sm md:text-base text-muted-foreground">
@@ -325,11 +325,12 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
             ))}
             {/* {isLoading && <ChatMessage role="assistant" content="..." isTyping />} */}
             {isLoading && <BlinkingDots />}
+            <div ref={scrollRef} />
           </div>
         </ScrollArea>
       </div>
 
-      <div className="sticky bottom-0 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t">
+      <div className="sticky bottom-0 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 ">
         <div className="mx-auto w-full max-w-3xl px-4 py-3 md:px-6 md:py-4">
           <ChatInput
             value={input}

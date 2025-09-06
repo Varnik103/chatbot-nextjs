@@ -43,7 +43,7 @@ export default function ChatPage() {
           collapsed={!sidebarOpen}
         />
         <div className="flex-1 flex flex-col">
-          <header className="sticky top-0 z-10 bg-[#212121]/80 backdrop-blur supports-[backdrop-filter]:bg-[#212121]/60 border-b">
+          <header className="sticky top-0 z-10 bg-[#212121]/80 backdrop-blur supports-[backdrop-filter]:bg-[#212121]/60 ">
             <div className="px-4 py-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {/* Mobile: hamburger */}
@@ -69,7 +69,7 @@ export default function ChatPage() {
                   <Menu className="size-5 text-white" />
                 </Button>
                 <h1 className="text-lg md:text-xl font-semibold text-white text-balance">
-                  New chat
+                  ChatBot
                 </h1>
               </div>
               {/* <ThemeToggle /> */}

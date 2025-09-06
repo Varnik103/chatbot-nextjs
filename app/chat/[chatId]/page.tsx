@@ -39,11 +39,11 @@ export default function ChatByIdPage({ params }: { params: Promise<{ chatId: str
 
   return (
     <main className="min-h-[calc(100dvh)] bg-background text-foreground font-sans">
-      <div className="mx-auto w-full max-w-[1920px] h-[100dvh] flex">
+      <div className="mx-auto w-full max-w-[1920px] h-[100dvh] flex overflow-y-hidden">
         <ChatSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} collapsed={!sidebarOpen} />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-            <div className="px-4 py-3 flex items-center justify-between">
+          <header className="sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="px-4 py-2 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"

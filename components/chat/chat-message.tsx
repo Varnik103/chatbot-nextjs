@@ -40,6 +40,7 @@ export function ChatMessage({
   const isUser = role === "user";
   const isAssistant = role === "assistant" || role === "system";
   const [copied, setCopied] = useState(false);
+  const [previewImg, setPreviewImg] = useState<string | null>(null);
 
   const isImageUrl = (u: string) =>
     /\.(png|jpe?g|gif|webp|avif|svg)(\?.*)?$/i.test(u);
@@ -83,49 +84,74 @@ export function ChatMessage({
     >
       {/* attachments outside bubble */}
       {attachments && attachments.length > 0 && (
-        <ul className="mt-2 space-y-2">
-          {attachments.map((a) => {
-            const isImg = isImageUrl(a.url);
-            const isPdf = /\.pdf$/i.test(a.name);
-            return (
-              <li key={a.url}>
-                {isImg ? (
-                  <img
-                    src={a.url}
-                    alt={a.name}
-                    className="max-h-40 rounded-md "
-                  />
-                ) : isPdf ? (
-                  <div className="flex items-center gap-2 rounded-md border p-2 text-xs shadow-sm">
-                    <span className="text-red-600">📄</span>
-                    <span className="truncate max-w-[160px]">{a.name}</span>
-                    <a
-                      href={a.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="ml-auto text-blue-600 hover:underline"
-                    >
-                      View
-                    </a>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 rounded-md border p-2 text-xs shadow-sm">
-                    <span>📎</span>
-                    <span className="truncate max-w-[160px]">{a.name}</span>
-                    <a
-                      href={a.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="ml-auto text-blue-600 hover:underline"
-                    >
-                      Open
-                    </a>
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+        <>
+          <ul className="py-2 space-y-2">
+            {attachments.map((a) => {
+              const isImg = isImageUrl(a.url);
+              const isPdf = /\.pdf$/i.test(a.name);
+
+              return (
+                <li key={a.url}>
+                  {isImg ? (
+                    <img
+                      src={a.url}
+                      alt={a.name}
+                      onClick={() => setPreviewImg(a.url)}
+                      className="max-h-40 rounded-md cursor-pointer transition duration-200 hover:opacity-90"
+                    />
+                  ) : isPdf ? (
+                    <div className="flex items-center gap-2 rounded-md border p-2 text-xs shadow-sm">
+                      <span className="text-red-600">📄</span>
+                      <span className="truncate max-w-[160px]">{a.name}</span>
+                      {/* <a
+                  href={a.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="ml-auto text-blue-600 hover:underline"
+                >
+                  View
+                </a> */}
+                      <a
+                        href={a.url}
+                        target="_blank"
+                        className="text-green-600 hover:underline"
+                      >
+                        View
+                      </a>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 rounded-md border p-2 text-xs shadow-sm">
+                      <span>📎</span>
+                      <span className="truncate max-w-[160px]">{a.name}</span>
+                      <a
+                        href={a.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="ml-auto text-blue-600 hover:underline"
+                      >
+                        Open
+                      </a>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+
+          {/* Image Preview Modal */}
+          {previewImg && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80"
+              onClick={() => setPreviewImg(null)}
+            >
+              <img
+                src={previewImg}
+                alt="Preview"
+                className="max-h-[90%] max-w-[90%] rounded-lg shadow-lg"
+              />
+            </div>
+          )}
+        </>
       )}
 
       {/* message bubble (only for text) */}

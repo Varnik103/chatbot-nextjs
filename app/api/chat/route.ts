@@ -16,10 +16,15 @@ const mem0 = createMem0({
 });
 
 function smartTitle(text: string) {
-  const trimmed = (text || "").trim().replace(/\s+/g, " ")
-  const firstSentence = trimmed.split(/[.!?]\s/)[0] || trimmed
-  const slice = firstSentence.slice(0, 50)
-  return slice
+  const trimmed = (text || "").trim().replace(/\s+/g, " ");
+  const firstSentence = trimmed.split(/[.!?]\s/)[0] || trimmed;
+  const slice = firstSentence.slice(0, 50);
+  
+  // Capitalize the first letter of the first word
+  if (slice.length > 0) {
+    return slice.charAt(0).toUpperCase() + slice.slice(1);
+  }
+  return slice; // Return empty string as-is if no content
 }
 
 export async function POST(req: Request) {
