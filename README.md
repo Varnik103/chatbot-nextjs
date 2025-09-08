@@ -75,4 +75,4 @@ A Next.js-based AI chat application—built with modern tools and best practices
 
 
 ## Deployment
-Vercel
+- Vercel
