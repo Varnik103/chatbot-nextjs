@@ -46,7 +46,7 @@ A Next.js-based AI chat application—built with modern tools and best practices
 
 ### Installation
 
-- git clone https://github.com/Varnik103/chatbot-nextjs.git
+- git clone
 - cd chatbot-nextjs
 - npm install
 
