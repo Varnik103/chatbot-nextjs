@@ -46,32 +46,32 @@ A Next.js-based AI chat application—built with modern tools and best practices
 
 ### Installation
 
-git clone https://github.com/Varnik103/chatbot-nextjs.git
-cd chatbot-nextjs
-npm install
+- git clone https://github.com/Varnik103/chatbot-nextjs.git
+- cd chatbot-nextjs
+- npm install
 
 ## Environment Variables
-XAI_API_KEY
-MONGODB_URI
-CLOUDINARY_CLOUD_NAME
-CLOUDINARY_API_KEY
-CLOUDINARY_API_SECRET
-CLERK_SECRET_KEY
-UPLOADCARE_SECRET_KEY
-MEM0_API_KEY
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
-NEXT_PUBLIC_UPLOADCARE_PUBLIC_KEY
-NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
-NEXT_PUBLIC_GROK_MODEL
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+- XAI_API_KEY
+- MONGODB_URI
+- CLOUDINARY_CLOUD_NAME
+- CLOUDINARY_API_KEY
+- CLOUDINARY_API_SECRET
+- CLERK_SECRET_KEY
+- UPLOADCARE_SECRET_KEY
+- MEM0_API_KEY
+- NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+- NEXT_PUBLIC_UPLOADCARE_PUBLIC_KEY
+- NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+- NEXT_PUBLIC_GROK_MODEL
+- NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 
 ## Project Structure
-/app           — Next.js App Router pages and API routes
-/components    — UI components (e.g., ChatMessage, ChatInput)
-/lib           — Helper functions
-/public        — Static assets
-README.md      — Project documentation
+- /app           — Next.js App Router pages and API routes
+- /components    — UI components (e.g., ChatMessage, ChatInput)
+- /lib           — Helper functions
+- /public        — Static assets
+- README.md      — Project documentation
 
 
 ## Deployment
