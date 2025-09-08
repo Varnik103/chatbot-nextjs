@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Chatbot-NextJS
+
+A Next.js-based AI chat application—built with modern tools and best practices. Bootstrapped with `create-next-app`.
+
+---
+
+## Table of Contents
+- [Features](#features)  
+- [Tech Stack](#tech-stack)  
+- [Getting Started](#getting-started)  
+  - [Prerequisites](#prerequisites)  
+  - [Installation](#installation)  
+  - [Running Locally](#running-locally)  
+- [Environment Variables](#environment-variables)  
+- [Project Structure](#project-structure)  
+- [Deployment](#deployment)  
+
+---
+
+## Features
+- Interactive AI-powered chatbot interface  
+- Component-based UI for messages and inputs  
+- Streaming responses from AI backend  
+- File attachments with inline preview and modal view  
+- Editable and copyable messages  
+- Mobile-responsive design with handling for long code blocks
+
+---
+
+## Tech Stack
+- **Framework**: Next.js (App Router)  
+- **Styling**: Tailwind CSS  
+- **Syntax Highlighting**: React Syntax Highlighter (via Prism)  
+- **Clipboard UI**: Clipboard API + `sonner` for toasts  
+- **Editor UI**: `react-textarea-autosize` for editable messages  
+- **Icons**: Icons via `lucide-react`
+
+---
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+- Next.js
+- Package manager: `npm` (or `yarn` / `pnpm`)  
+- AI backend/API key (if applicable)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+### Installation
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+git clone https://github.com/Varnik103/chatbot-nextjs.git
+cd chatbot-nextjs
+npm install
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Variables
+XAI_API_KEY
+MONGODB_URI
+CLOUDINARY_CLOUD_NAME
+CLOUDINARY_API_KEY
+CLOUDINARY_API_SECRET
+CLERK_SECRET_KEY
+UPLOADCARE_SECRET_KEY
+MEM0_API_KEY
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+NEXT_PUBLIC_UPLOADCARE_PUBLIC_KEY
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+NEXT_PUBLIC_GROK_MODEL
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Learn More
+## Project Structure
+/app           — Next.js App Router pages and API routes
+/components    — UI components (e.g., ChatMessage, ChatInput)
+/lib           — Helper functions
+/public        — Static assets
+README.md      — Project documentation
 
-To learn more about Next.js, take a look at the following resources:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deployment
+Vercel
