@@ -33,7 +33,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`font-sans ${geistSans.variable} ${geistMono.variable}`}>
         <ClerkProvider appearance={{ baseTheme: dark }}>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
             <Suspense fallback={null}>
               {children}
               <Analytics />
