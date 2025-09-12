@@ -19,7 +19,7 @@ function smartTitle(text: string) {
   const trimmed = (text || "").trim().replace(/\s+/g, " ");
   const firstSentence = trimmed.split(/[.!?]\s/)[0] || trimmed;
   const slice = firstSentence.slice(0, 50);
-  
+
   // Capitalize the first letter of the first word
   if (slice.length > 0) {
     return slice.charAt(0).toUpperCase() + slice.slice(1);
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
 
     const memoryPrompt: LanguageModelV2Prompt = messages.map((m: Message) => { return { role: m.role, content: [{ type: "text", text: m.content }] } })
 
-    let memories = await retrieveMemories(memoryPrompt, {user_id: userId})
+    let memories = await retrieveMemories(memoryPrompt, { user_id: userId })
 
     let effectiveChatId: string | undefined = chatId
 
@@ -68,7 +68,7 @@ export async function POST(req: Request) {
       })
 
       if (firstUser?.content) {
-        memories = await retrieveMemories(firstUser?.content, {user_id: userId})
+        memories = await retrieveMemories(firstUser?.content, { user_id: userId })
 
         await db.collection("messages").insertOne({
           id: crypto.randomUUID(),
@@ -84,10 +84,11 @@ export async function POST(req: Request) {
       effectiveChatId = id
     }
 
+    const enrichedMessages = enrichMessages(messages, lastAttachments)
     const result = await streamText({
       model: xai("grok-4"),
       system: memories,
-      messages,
+      messages: enrichedMessages,
     })
 
     // persist assistant final text and bump updatedAt
@@ -106,7 +107,7 @@ export async function POST(req: Request) {
         })
         await db.collection("chats").updateOne({ id: effectiveChatId }, { $set: { updatedAt: createdAt } })
       })
-      .catch(() => {})
+      .catch(() => { })
 
     const response = result.toTextStreamResponse()
     response.headers.set("X-Chat-Id", effectiveChatId!)
@@ -119,4 +120,37 @@ export async function POST(req: Request) {
         : e?.message || "Failed to generate response."
     return Response.json({ error: msg }, { status: e?.statusCode || 500 })
   }
+}
+
+
+function enrichMessages(messages: Message[], lastAttachments?: any[]): any {
+  const mapped: any = messages.map((m) => ({
+    role: m.role as "system" | "user" | "assistant" | "tool", // "data" is not supported by ModelMessage
+    content: [{ type: "text", text: m.content }],
+  }))
+
+  if (lastAttachments?.length) {
+    const attachmentContent = lastAttachments.flatMap((att) => {
+      const base: { type: "text"; text: string }[] = [
+        {
+          type: "text",
+          text: `Attachment: ${att.name} (${att.type})\nURL: ${att.url}`,
+        },
+      ]
+      if (att.extractedText) {
+        base.push({
+          type: "text",
+          text: `Extracted Text:\n${att.extractedText}`,
+        })
+      }
+      return base
+    })
+
+    mapped.push({
+      role: "user",
+      content: attachmentContent,
+    })
+  }
+
+  return mapped
 }

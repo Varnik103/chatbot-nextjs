@@ -9,10 +9,11 @@ import { ChatMessage } from "./chat-message"
 import { ChatInput } from "./chat-input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { toast } from "sonner"
-
+import { createWorker } from "tesseract.js";
+import { extractTextFromPDF } from "@/utility/ocr";
 
 type Role = "system" | "user" | "assistant" | "data" | "tool"
-type Attachment = { url: string; name: string; type: string }
+type Attachment = { url: string; name: string; type: string, extractedText?: string }
 type Message = {
   id: string
   role: Role
@@ -49,14 +50,14 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
   }, [data?.messages])
 
   function BlinkingDots() {
-  return (
-    <span className="flex gap-1">
-      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
-      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
-      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-    </span>
-  )
-}
+    return (
+      <span className="flex gap-1">
+        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
+        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
+        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+      </span>
+    )
+  }
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -80,7 +81,7 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
       try {
         const j = await res.json()
         if (j?.error) detail = j.error
-      } catch {}
+      } catch { }
       toast.error("Chat error", { description: detail })
       throw new Error(`Request failed: ${res.status}`)
     }
@@ -88,7 +89,7 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
     const newChatId = res.headers.get("x-chat-id")
     if (newChatId && !localChatId) {
       setLocalChatId(newChatId)
-      router.replace(`/chat/${newChatId}`, {scroll: false})
+      router.replace(`/chat/${newChatId}`, { scroll: false })
       setTimeout(() => mutate(), 0)
     }
 
@@ -206,65 +207,64 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
   const [editingText, setEditingText] = useState<string>("")
 
   async function saveEdit() {
-  if (!editingId) return
-  const idx = messages.findIndex((m) => m.id === editingId)
-  if (idx < 0) return
+    if (!editingId) return
+    const idx = messages.findIndex((m) => m.id === editingId)
+    if (idx < 0) return
 
-  // prevent save if no change
-  if (messages[idx].content === editingText.trim()) {
+    // prevent save if no change
+    if (messages[idx].content === editingText.trim()) {
+      setEditingId(null)
+      setEditingText("")
+      return
+    }
+
+    const edited = { ...messages[idx], content: editingText.trim() }
+
+    // Persist edit
+    await fetch(`/api/messages/${edited.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: edited.content }),
+    })
+
+    // Cut conversation history right after edited message
+    const next = messages.slice(0, idx + 1)
+    next[idx] = edited
+    setMessages(next)
+
+    // Reset editing state
     setEditingId(null)
     setEditingText("")
-    return
+
+    // Start regeneration
+    const controller = new AbortController()
+    abortRef.current = controller
+    setIsLoading(true)
+
+    const assistantId = crypto.randomUUID()
+    setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "" }])
+
+    try {
+      await streamCompletion(
+        next.map(({ role, content }) => ({ role, content })),
+        assistantId,
+        controller,
+        { chatId: localChatId },
+      )
+      mutate()
+    } catch {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId
+            ? { ...m, content: (m.content || "") + "\n⚠️ Error regenerating response" }
+            : m
+        ),
+      )
+    } finally {
+      setIsLoading(false)
+      abortRef.current = null
+    }
   }
-
-  const edited = { ...messages[idx], content: editingText.trim() }
-
-  // Persist edit
-  await fetch(`/api/messages/${edited.id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ content: edited.content }),
-  })
-
-  // Cut conversation history right after edited message
-  const next = messages.slice(0, idx + 1)
-  next[idx] = edited
-  setMessages(next)
-
-  // Reset editing state
-  setEditingId(null)
-  setEditingText("")
-
-  // Start regeneration
-  const controller = new AbortController()
-  abortRef.current = controller
-  setIsLoading(true)
-
-  const assistantId = crypto.randomUUID()
-  setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "" }])
-
-  try {
-    await streamCompletion(
-      next.map(({ role, content }) => ({ role, content })),
-      assistantId,
-      controller,
-      { chatId: localChatId },
-    )
-    mutate()
-  } catch {
-    setMessages((prev) =>
-      prev.map((m) =>
-        m.id === assistantId
-          ? { ...m, content: (m.content || "") + "\n⚠️ Error regenerating response" }
-          : m
-      ),
-    )
-  } finally {
-    setIsLoading(false)
-    abortRef.current = null
-  }
-}
-
 
   async function handleFileSelect(file: File): Promise<string> {
     if (pendingAttachments.length >= 2) {
@@ -281,9 +281,20 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
       return Promise.reject(""); // Return an empty string to satisfy the type
     }
     const { url } = await res.json()
+
+    let extractedText = "";
+
+    if (file.type === 'application/pdf') {
+      extractedText = await extractTextFromPDF(file);
+    } else if (file.type.startsWith('image/')) {
+      const worker = await createWorker('eng');
+      const ret = await worker.recognize(file);
+      extractedText = ret.data.text;
+      await worker.terminate();
+    }
     setPendingAttachments((prev) => [
       ...prev,
-      { url, name: file.name, type: file.type },
+      { url, name: file.name, type: file.type, extractedText: extractedText },
     ])
     return url; // Always return a string
   }
@@ -308,9 +319,9 @@ export default function ChatClient({ chatId }: { chatId?: string }) {
                 onEdit={
                   m.role === "user"
                     ? () => {
-                        setEditingId(m.id)
-                        setEditingText(m.content)
-                      }
+                      setEditingId(m.id)
+                      setEditingText(m.content)
+                    }
                     : undefined
                 }
                 isEditing={editingId === m.id}
