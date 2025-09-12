@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic"
 
 type Role = "system" | "user" | "assistant" | "data" | "tool"
 type Message = { id?: string; role: Role; content: string; attachments?: string[] }
+type Attachment = { url: string; name: string; type: string; extractedText?: string }
 
 const mem0 = createMem0({
   provider: "openai",
@@ -88,7 +89,7 @@ export async function POST(req: Request) {
     const result = await streamText({
       model: xai("grok-4"),
       system: memories,
-      messages: enrichedMessages,
+      messages: enrichedMessages as LanguageModelV2Prompt,
     })
 
     // persist assistant final text and bump updatedAt
@@ -123,8 +124,8 @@ export async function POST(req: Request) {
 }
 
 
-function enrichMessages(messages: Message[], lastAttachments?: any[]): any {
-  const mapped: any = messages.map((m) => ({
+function enrichMessages(messages: Message[], lastAttachments?: Attachment[]) {
+  const mapped = messages.map((m) => ({
     role: m.role as "system" | "user" | "assistant" | "tool", // "data" is not supported by ModelMessage
     content: [{ type: "text", text: m.content }],
   }))
